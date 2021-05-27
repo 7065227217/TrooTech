@@ -26,20 +26,21 @@ class User_model extends CI_Model {
     }
 
     function createCategory($param) {
+        // print_r($param);exit;
         if(isset($param['parent_id']) and $param['parent_id']){
-            $getStatus=$this->getSingleDataRow('product_category','category_id="'.$param['parent_id'].'"');
+            $this->db->where('category_id',$param['parent_id']); 
+            $getStatus = $this->db->get('product_category')->row_array();
             if(!$getStatus){
                 return array('error'=>true,'code'=>201,'message'=>'Category not found.');
             }
         }else{
             $param['parent_id']=0;
         }
-        
         $insertArr=array(
-            'name'          => $param['name'],
+            'name'              => $param['name'],
             'category_parent_id'=>$param['parent_id']
         );
-        $insertData         = $this->insertDataTable('product_category',$insertArr);	
+        $insertData = $this->db->insert('product_category', $insertArr);	
         if($insertData){
             return array('error'=>false,'code'=>200,'message'=>'Category Created.');
         }else{
@@ -47,8 +48,47 @@ class User_model extends CI_Model {
         }
     }
 
+    function allCategoryList(){
+        $categoryArr=array();
+        $this->db->where('status',1); 
+        $getCategory = $this->db->get('product_category')->result_array();
+        if($getCategory){
+            foreach($getCategory as $list){
+                $this->db->where('status',1); 
+                $this->db->where('category_parent_id',$list['category_id']); 
+                $childList = $this->db->get('product_category')->result_array();
+                $list['childList']=$childList;
+                array_push($categoryArr,$list);
+            }
+            return $categoryArr;
+        }else{
+            return false;
+        }
+    }
+
     function categoryList(){
-        $getCategory=$this->getTableDataArray('product_category','status=1 and category_parent_id=0');
+        $categoryArr=array();
+        $this->db->where('status',1); 
+        $this->db->where('category_parent_id',0); 
+        $getCategory = $this->db->get('product_category')->result_array();
+        if($getCategory){
+            foreach($getCategory as $list){
+                $this->db->where('status',1); 
+                $this->db->where('category_parent_id',$list['category_id']); 
+                $childList = $this->db->get('product_category')->result_array();
+                $list['childList']=$childList;
+                array_push($categoryArr,$list);
+            }
+            return $categoryArr;
+        }else{
+            return false;
+        }
+    }
+
+    function categoryDetail($param){
+        $this->db->where('status',1); 
+        $this->db->where('category_id',$param['category_id']); 
+        $getCategory = $this->db->get('product_category')->row_array();
         if($getCategory){
             return $getCategory;
         }else{
@@ -57,7 +97,9 @@ class User_model extends CI_Model {
     }
 
     function subCategoryList($param){
-        $getCategory=$this->getTableDataArray('product_category','status=1 and category_parent_id="'.$param['category_id'].'"');
+        $this->db->where('status',1); 
+        $this->db->where('category_parent_id',$param['category_id']); 
+        $getCategory = $this->db->get('product_category')->result_array();
         if($getCategory){
             return $getCategory;
         }else{
@@ -68,7 +110,8 @@ class User_model extends CI_Model {
         $updateArr=array(
             'name'          => $param['name']
         );
-        $updateData         = $this->updatedataTable('product_category','category_id="'.$param['category_id'].'"',$updateArr);	
+        $this->db->where('category_id',$param['category_id']);
+        $updateData = $this->db->update('product_category', $updateArr);
         if($updateData){
             return true;
         }else{
@@ -79,7 +122,8 @@ class User_model extends CI_Model {
         $updateArr=array(
             'status'          => 99
         );
-        $updateData         = $this->updatedataTable('product_category','category_id="'.$param['category_id'].'"',$updateArr);	
+        $this->db->where('category_id',$param['category_id']);
+        $updateData = $this->db->update('product_category', $updateArr);
         if($updateData){
             return true;
         }else{
@@ -89,14 +133,17 @@ class User_model extends CI_Model {
 
 
     function createProduct($param) {
-        
+        $sub_category_id=0;
+        if(isset($param['sub_category_id']) and $param['sub_category_id']){
+            $sub_category_id=$param['sub_category_id'];
+        }
         $insertArr=array(
             'category_id'       => $param['category_id'],
-            'sub_category_id'   => $param['sub_category_id'],
+            'sub_category_id'   => $sub_category_id,
             'name'              => $param['name'],
             'price'             => $param['price'],
         );
-        $insertData         = $this->insertDataTable('product',$insertArr);	
+        $insertData = $this->db->insert('product', $insertArr);	
         if($insertData){
             return true;
         }else{
